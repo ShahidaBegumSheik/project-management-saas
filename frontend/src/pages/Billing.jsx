@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Card from "../components/Card";
 import { api } from "../api/client";
 
 export default function Billing() {
   const [billing, setBilling] = useState(null);
   const [err, setErr] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [params] = useSearchParams();
+
+  const checkoutStatus = params.get("checkout");
 
   async function loadBilling() {
     try {
@@ -16,6 +21,8 @@ export default function Billing() {
   }
 
   async function upgrade() {
+    setErr("");
+    setSuccessMsg("");
     try {
       const res = await api.post("/billing/checkout/pro");
       window.location.href = res.data.url;
@@ -24,21 +31,19 @@ export default function Billing() {
     }
   }
 
-  async function openPortal() {
-    try {
-      const res = await api.post("/billing/portal");
-      window.location.href = res.data.url;
-    } catch (e) {
-      setErr(e?.response?.data?.detail || "Portal failed");
-    }
-  }
+  async function cancelSubscription() {
+    setErr("");
+    setSuccessMsg("");
 
-  async function cancelPlan() {
+    const ok = window.confirm("Are you sure you want to cancel your Pro subscription?");
+    if (!ok) return;
+
     try {
-      await api.post("/billing/cancel");
+      const res = await api.post("/billing/mock-webhook/downgrade");
+      setSuccessMsg(res.data.message || "Subscription cancelled successfully");
       await loadBilling();
     } catch (e) {
-      setErr(e?.response?.data?.detail || "Cancel failed");
+      setErr(e?.response?.data?.detail || "Cancellation failed");
     }
   }
 
@@ -49,7 +54,29 @@ export default function Billing() {
   return (
     <div className="grid gap-6">
       <Card title="Billing" subtitle="Manage your current subscription">
-        {err && <div className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
+        {checkoutStatus === "success" && (
+          <div className="mb-4 rounded-xl bg-green-50 px-3 py-2 text-sm text-green-700">
+            Payment successful. Your subscription has been upgraded to Pro.
+          </div>
+        )}
+
+        {checkoutStatus === "failure" && (
+          <div className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+            Payment failed. Your subscription was not upgraded.
+          </div>
+        )}
+
+        {successMsg && (
+          <div className="mb-4 rounded-xl bg-green-50 px-3 py-2 text-sm text-green-700">
+            {successMsg}
+          </div>
+        )}
+
+        {err && (
+          <div className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+            {err}
+          </div>
+        )}
 
         {!billing ? (
           <p className="text-sm text-slate-500">Loading billing information...</p>
@@ -67,45 +94,29 @@ export default function Billing() {
               </div>
             </div>
 
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border p-4">
-                <p className="text-sm text-slate-500">Stripe customer ID</p>
-                <p className="mt-1 break-all text-sm">{billing.stripe_customer_id || "-"}</p>
-              </div>
-
-              <div className="rounded-2xl border p-4">
-                <p className="text-sm text-slate-500">Stripe subscription ID</p>
-                <p className="mt-1 break-all text-sm">{billing.stripe_subscription_id || "-"}</p>
-              </div>
-            </div>
-
             <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                onClick={upgrade}
-                className="rounded-xl bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800"
-              >
-                Upgrade to Pro
-              </button>
-              <button
-                onClick={openPortal}
-                className="rounded-xl border px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Manage in Stripe Portal
-              </button>
-              <button
-                onClick={cancelPlan}
-                className="rounded-xl border border-red-300 px-4 py-2 font-semibold text-red-700 hover:bg-red-50"
-              >
-                Cancel Subscription
-              </button>
-            </div>
+              {billing.plan === "free" && (
+                <button
+                  onClick={upgrade}
+                  className="rounded-xl bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800"
+                >
+                  Upgrade to Pro
+                </button>
+              )}
 
-            <p className="mt-4 text-sm text-slate-500">
-              This frontend works with the current mock Stripe backend flow. Clicking upgrade redirects to a mock checkout route.
-            </p>
+              {billing.plan === "pro" && (
+                <button
+                  onClick={cancelSubscription}
+                  className="rounded-xl border border-red-400 px-4 py-2 font-semibold text-red-700 hover:bg-red-50"
+                >
+                  Cancel Subscription
+                </button>
+              )}
+            </div>
           </>
         )}
       </Card>
     </div>
   );
 }
+

@@ -16,6 +16,13 @@ class Settings(BaseSettings):
     admin_email: str = Field(default="admin@gmail.com", alias="ADMIN_EMAIL")
     admin_password: str = Field(default="admin1234", alias="ADMIN_PASSWORD")
 
+    smtp_host: str = Field(default="", alias="SMTP_HOST")
+    smtp_port: int = Field(default=587, alias="SMTP_PORT")
+    smtp_username: str = Field(default="", alias="SMTP_USERNAME")
+    smtp_password: str = Field(default="", alias="SMTP_PASSWORD")
+    email_from: str = Field(default="", alias="EMAIL_FROM")
+
+
     # stripe_secret_key: str = Field(default="", alias="STRIPE_SECRET_KEY")
     # stripe_webhook_secret: str = Field(default="", alias="STRIPE_WEBHOOK_SECRET")
     # stripe_pro_price_id: str = Field(default="", alias="STRIPE_PRO_PRICE_ID")

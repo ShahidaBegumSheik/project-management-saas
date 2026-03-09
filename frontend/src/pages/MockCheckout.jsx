@@ -13,19 +13,19 @@ export default function MockCheckout() {
     setErr("");
     try {
       await api.post("/billing/mock-webhook/success");
-      navigate("/app/billing");
+      navigate("/app/billing?checkout=success");
     } catch (e) {
       setErr(e?.response?.data?.detail || "Payment simulation failed");
     }
   }
 
-  async function simulateDowngrade() {
+  async function simulateFailure() {
     setErr("");
     try {
-      await api.post("/billing/mock-webhook/downgrade");
-      navigate("/app/billing");
+      await api.post("/billing/mock-webhook/failure");
+      navigate("/app/billing?checkout=failure");
     } catch (e) {
-      setErr(e?.response?.data?.detail || "Downgrade simulation failed");
+      setErr(e?.response?.data?.detail || "Payment simulation failed");
     }
   }
 
@@ -37,20 +37,19 @@ export default function MockCheckout() {
         <div className="mt-6 flex flex-wrap gap-3">
           <button
             onClick={simulateSuccess}
-            className="rounded-xl bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800"
-          >
+            className="rounded-xl bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800">
             Simulate Payment Success
           </button>
+          
           <button
-            onClick={simulateDowngrade}
-            className="rounded-xl border px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            Simulate Downgrade
+            onClick={simulateFailure}
+            className="rounded-xl bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800">
+            Simulate Payment Failure
           </button>
+
           <button
             onClick={() => navigate("/app/billing")}
-            className="rounded-xl border px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
-          >
+            className="rounded-xl border px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50">
             Cancel
           </button>
         </div>
