@@ -1,45 +1,54 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import RequireAuth from "./guards/RequireAuth";
-import RequireAdmin from "./guards/RequireAdmin";
-import AppLayout from "./layouts/AppLayout";
+import RequireRole from "./guards/RequireRole";
+import AuthLayout from "./layouts/AuthLayout";
+import UserLayout from "./layouts/UserLayout";
 import AdminLayout from "./layouts/AdminLayout";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Projects from "./pages/Projects";
-import Billing from "./pages/Billing";
-import AdminUsers from "./pages/AdminUsers";
-import AdminSubscriptions from "./pages/AdminSubscriptions";
-import AdminMapping from "./pages/AdminMapping";
-import MockCheckout from "./pages/MockCheckout";
-import MockPortal from "./pages/MockPortal";
+import LoginPage from "./pages/auth/LoginPage";
+import RegisterPage from "./pages/auth/RegisterPage";
+import UserDashboard from "./pages/user/UserDashboard";
+import ProjectsPage from "./pages/user/ProjectsPage";
+import TeamsPage from "./pages/user/TeamsPage";
+import BillingPage from "./pages/user/BillingPage";
+import NotificationsPage from "./pages/user/NotificationsPage";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsersPage from "./pages/admin/AdminUsersPage";
+import AdminSubscriptionsPage from "./pages/admin/AdminSubscriptionsPage";
+import AdminMappingPage from "./pages/admin/AdminMappingPage";
+import AdminNotificationsPage from "./pages/admin/AdminNotificationsPage";
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/mock-checkout" element={<MockCheckout />} />
-      <Route path="/mock-portal" element={<MockPortal />} />
+      <Route element={<AuthLayout />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+      </Route>
 
       <Route element={<RequireAuth />}>
-        <Route path="/app" element={<AppLayout />}>
-          <Route index element={<Navigate to="/app/projects" replace />} />
-          <Route path="projects" element={<Projects />} />
-          <Route path="billing" element={<Billing />} />
+        <Route element={<RequireRole role="user" />}>
+          <Route path="/app" element={<UserLayout />}>
+            <Route index element={<UserDashboard />} />
+            <Route path="projects" element={<ProjectsPage />} />
+            <Route path="teams" element={<TeamsPage />} />
+            <Route path="billing" element={<BillingPage />} />
+            <Route path="notifications" element={<NotificationsPage />} />
+          </Route>
+        </Route>
+
+        <Route element={<RequireRole role="admin" />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
+            <Route path="mapping" element={<AdminMappingPage />} />
+            <Route path="notifications" element={<AdminNotificationsPage />} />
+          </Route>
         </Route>
       </Route>
 
-      <Route element={<RequireAdmin />}>
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="/admin/users" replace />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="subscriptions" element={<AdminSubscriptions />} />
-          <Route path="mapping" element={<AdminMapping />} />
-        </Route>
-      </Route>
-
-      <Route path="*" element={<div className="p-8 text-center text-lg">Not found</div>} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }

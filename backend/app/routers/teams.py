@@ -160,21 +160,32 @@ def invite_member(
         invited_at=datetime.now(timezone.utc),
     )
     db.add(invitation)
+
+    frontend_invite_link = f"http://localhost:5173/app/teams?inviteToken={invitation.token}" 
+
     create_notification_for_email_user(
         db,
         normalized_email,
         "Team invitation",
-        f"You have been invited to join {team.name}.",
+        f"You have been invited to join {team.name}. Open this link to respond: {frontend_invite_link}",
         "info",
     )
+
+    if existing_user:
+        create_notification(
+            db,existing_user.id, "Team invitation",
+            f"You have been invited to join {team.name}. Open this link to respond: {frontend_invite_link}",
+            "info",
+        )
     try:
         send_team_invitation_email(
             normalized_email,
             team.name,
-            f"http://localhost:5173/app/teams?inviteToken={invitation.token}",
+            frontend_invite_link,
         )
     except Exception as e:
         print(f"Team invitation email failed: {e}")
+        
     log_action(
         db,
         user.id,
