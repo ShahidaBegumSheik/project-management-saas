@@ -44,9 +44,19 @@ def test_project_create_and_delete_flow(client, user_headers):
 
 
 def test_user_cannot_delete_other_users_project(client):
-    r1 = client.post("/api/v1/auth/register", json={"email": "owner@example.com", "password": "password123"})
-    owner_token = r1.json()["access_token"]
-    owner_headers = {"Authorization": f"Bearer {owner_token}"}
+    def register_verify_login(email):
+        reg = client.post(
+            "/api/v1/auth/register", json={"email": email, "password": "password123"}
+        )
+        token = reg.json()["verification_token"]
+        client.get(f"/api/v1/auth/verify-email?token={token}")
+        login = client.post(
+            "/api/v1/auth/login", data={"username": email, "password": "password123"}
+        )
+        access = login.json()["access_token"]
+        return {"Authorization": f"Bearer {access}"}
+
+    owner_headers = register_verify_login("owner@example.com")
 
     create_resp = client.post(
         "/api/v1/projects",
@@ -55,10 +65,10 @@ def test_user_cannot_delete_other_users_project(client):
     )
     project_id = create_resp.json()["id"]
 
-    r2 = client.post("/api/v1/auth/register", json={"email": "intruder@example.com", "password": "password123"})
-    intruder_token = r2.json()["access_token"]
-    intruder_headers = {"Authorization": f"Bearer {intruder_token}"}
+    intruder_headers = register_verify_login("intruder@example.com")
 
-    delete_resp = client.delete(f"/api/v1/projects/{project_id}", headers=intruder_headers)
+    delete_resp = client.delete(
+        f"/api/v1/projects/{project_id}", headers=intruder_headers
+    )
     assert delete_resp.status_code == 200
     assert delete_resp.json()["deleted"] is False

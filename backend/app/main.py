@@ -2,22 +2,28 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.routers import auth, projects, billing, admin
+from app.routers import (admin, analytics, auth, billing, notifications,
+                         projects, teams)
 
 app = FastAPI(
     title="Project Management SaaS",
-    version="1.0.0",
+    version="2.0.0",
     description="""
 This API supports:
 
 ### User Features
-- Authnetication
+- Authnetication and email verification
 - Project Management
-- Subscription Billing
+- Team collaboration
+- In-app notification
+- Activity tracking
+- Razorpay billing
 
 ### Admin Features
 - User Monitoring
 - Subscription Monitoring
+- Analytics dashboard
+- System notifications
 
 ### Technology Stack
 
@@ -30,7 +36,7 @@ Backend
 - Stripe (subscriptions + webhooks)
 
 Paytment
-- Simulated Stripe (Simulated Subscription System)
+- Razorpay
 """,
 )
 
@@ -46,6 +52,10 @@ app.include_router(auth.router, prefix="/api/v1")
 app.include_router(projects.router, prefix="/api/v1")
 app.include_router(billing.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
+app.include_router(teams.router, prefix="/api/v1")
+app.include_router(notifications.router, prefix="/api/v1")
+app.include_router(analytics.router, prefix="/api/v1")
+
 
 @app.get("/health")
 def health():

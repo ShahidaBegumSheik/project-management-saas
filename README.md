@@ -81,6 +81,8 @@ project-management-saas
 │   │   │   ├── subscription_service.py
 │   │   │   ├── mock_stripe_service.py
 │   │   │   └── stripe_service.py
+|   |   |   |__ email_service.py
+|   |   |   |__ invoice_service.py
 │   │   │
 │   │   ├── models
 │   │   │   ├── user.py
@@ -200,22 +202,33 @@ The platform supports **SaaS subscription billing**.
 
 Users can:
 
-- Upgrade to Pro
-- Cancel subscription
+- Upgrade to Pro and Email will be sent after subscription
+- Cancel subscription and email will be sent after cancellation
 - View billing status
+- Create and Delete  their projects
 
-Endpoints
+User Endpoints
+
+Projects
+
+```
+POST /api/v1/projects
+DELETE /api/v1/projects/{project_id}
+```
+
+Billing Endpoints
 
 ```
 GET  /api/v1/billing/me
 POST /api/v1/billing/checkout/pro
 POST /api/v1/billing/mock-webhook/success
 POST /api/v1/billing/mock-webhook/cancel
+POST /api/v1/billing/mock-webhook/downgrade
 ```
 
 ---
 
-# Admin APIs
+# Admin APIs 
 
 Admins can monitor platform activity.
 
@@ -232,6 +245,8 @@ GET /api/v1/admin/users
 GET /api/v1/admin/subscriptions
 GET /api/v1/admin/mapping
 ```
+
+Admin has access to billing endpoints also
 
 ---
 

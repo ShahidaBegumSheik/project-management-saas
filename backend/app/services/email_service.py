@@ -42,7 +42,9 @@ PM Team
     _send_email(user_email, "Your Project Subscription Invoice", body)
 
 
-def send_payment_failed_email(user_email: str, reason: str = "Payment could not be completed") -> None:
+def send_payment_failed_email(
+    user_email: str, reason: str = "Payment could not be completed"
+) -> None:
     body = f"""Hello,
 
 We could not complete your payment for the Pro subscription.
@@ -71,3 +73,30 @@ PM Team
 """
     _send_email(user_email, "Your Project Subscription Cancelled", body)
 
+
+def send_verification_email(user_email: str, verify_url: str) -> None:
+    body = f"""Hello,
+
+Please verify your Project account by opening the link below:
+
+{verify_url}
+
+If you did not create this account, please ignore this email.
+"""
+    _send_email(user_email, "Verify your Project account", body)
+
+
+def send_team_invitation_email(
+    user_email: str, team_name: str, accept_url: str
+) -> None:
+    body = f"""Hello,
+
+You have been invited to join the team "{team_name}".
+
+Open the link below to respond:
+{accept_url}
+
+Thank you,
+PM Team
+"""
+    _send_email(user_email, f"Invitation to join {team_name}", body)

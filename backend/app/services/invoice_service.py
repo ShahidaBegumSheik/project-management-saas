@@ -1,7 +1,8 @@
 from datetime import datetime
 
+
 def generate_invoice(user, subscription):
-    return{
+    return {
         "invoice_id": f"INV-{int(datetime.utcnow().timestamp())}",
         "user_email": user.email,
         "plan": subscription.plan,
