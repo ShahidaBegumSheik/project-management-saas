@@ -32,12 +32,6 @@ class Settings(BaseSettings):
     smtp_password: str = Field(default="", alias="SMTP_PASSWORD")
     email_from: str = Field(default="", alias="EMAIL_FROM")
 
-    # stripe_secret_key: str = Field(default="", alias="STRIPE_SECRET_KEY")
-    # stripe_webhook_secret: str = Field(default="", alias="STRIPE_WEBHOOK_SECRET")
-    # stripe_pro_price_id: str = Field(default="", alias="STRIPE_PRO_PRICE_ID")
-    # frontend_success_url: str = Field(default="http://localhost:5173/app/billing?checkout=success", alias="FRONTEND_SUCCESS_URL")
-    # frontend_cancel_url: str = Field(default="http://localhost:5173/app/billing?checkout=cancel", alias="FRONTEND_CANCEL_URL")
-
     frontend_verify_url: str = Field(
         default="http://localhost:5173/verify-email", alias="FRONTEND_VERIFY_URL"
     )

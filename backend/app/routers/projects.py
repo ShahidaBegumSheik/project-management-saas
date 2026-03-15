@@ -6,10 +6,11 @@ from app.core.database import get_db
 from app.dependencies.auth import get_current_user
 from app.dependencies.roles import can_access_team_project, require_end_user
 from app.models.project import Project
+from app.models.project_comment import ProjectComment
 from app.models.team import Team
 from app.models.team_member import TeamMember
 from app.schemas.project import (ProjectActivityOut, ProjectCreate, ProjectOut,
-                                 ProjectUpdate)
+                                 ProjectUpdate, ProjectCommentCreate, ProjectCommentOut)
 from app.services.activity_service import log_project_activity
 from app.services.audit_service import log_action
 from app.services.cache_service import (get_cached, invalidate_prefix,
@@ -77,7 +78,7 @@ def create_project(
 @router.get("", response_model=list[ProjectOut])
 def list_projects(
     db: Session = Depends(get_db),
-    user=Depends(get_current_user),
+    user=Depends(require_end_user),
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
 ):
@@ -190,3 +191,81 @@ def delete_project(
     db.commit()
     invalidate_prefix(f"projects:{user.id}:")
     return {"deleted": True}
+
+@router.get("/{project_id}/comments", response_model=list[ProjectCommentOut])
+def list_project_comments(project_id: int, db: Session = Depends(get_db), 
+                          user=Depends(get_current_user)):
+    project = db.get(Project, project_id)
+    if not project or not can_access_team_project(project, user, db):
+        raise HTTPException(status_code=404, detail="Project not found")
+    comments = (
+        db.query(ProjectComment)
+        .filter(ProjectComment.project_id)
+        .order_by(ProjectComment.created_at.asc()).all()
+    )
+    return [
+        ProjectCommentOut(
+            id=comment.id,
+            project_id=comment.project_id,
+            author_id=comment.author_id,
+            author_email=comment.author.email,
+            content=comment.content,
+            created_at=comment.created_at,
+        ) for comment in comments
+    ]
+
+@router.post("/{project_id}/comments", response_model=ProjectCommentOut)
+def add_project_comment(
+    project_id: int,
+    payload: ProjectCommentCreate,
+    db: Session = Depends(get_db),
+    user=Depends(require_end_user)
+):
+    project = db.get(Project, project_id)
+    if not project or not can_access_team_project(project, user, db):
+        raise HTTPException(status_code=404, detail="Project not found")
+    comment = ProjectComment(project_id=project.id, author_id=user.id,content=payload.content.strip())
+    db.add(comment)
+    db.flush()
+
+    log_action(db, user.id, "create", "project_comment", str(comment.id), {})
+    log_project_activity(db, project.id, user.id, 
+                         "comment_added", 
+                         f"{user.email} commented on '{project.name}'."
+                         )
+    db.commit()
+    db.refresh(comment)
+    invalidate_prefix(f"projects:{user.id}:")
+    return ProjectCommentOut(
+        id=comment.id,
+        project_id=comment.project_id,
+        author_id=comment.author_id,
+        author_email=comment.author.email,
+        content=comment.content,
+        created_at=comment.created_at,
+    )
+
+@router.delete("/{project_id}/comments/{comment_id}")
+def delete_project_comment(
+    project_id: int,
+    comment_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(require_end_user),
+    ):
+    project = db.get(Project, project_id)
+    if not project or not can_access_team_project(project, user, db):
+        raise HTTPException(status_code=404, detail="Project not found")
+    comment = (db.query(ProjectComment)
+               .filter(ProjectComment.id == comment_id, ProjectComment.project_id == project_id)
+               .first()
+    )
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    if comment.author_id != user.id:
+        raise HTTPException(status_code=403, detail="Only the comment owner can delete it")
+    log_action(db, user.id, "delete", "project_comment", str(comment.id),{})
+    db.delete(comment)
+    db.commit()
+    invalidate_prefix(f"projects:{user.id}:")
+    return {"deleted": True}
+    

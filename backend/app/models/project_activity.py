@@ -11,6 +11,7 @@ class Action(str, enum.Enum):
     created = "created"
     updated = "updated"
     deleted = "deleted"
+    comment_added = "comment_added"
 
 
 class ProjectActivity(Base):

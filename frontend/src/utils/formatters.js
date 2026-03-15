@@ -12,5 +12,29 @@ export function titleCase(value) {
 
 
 export function getErrorMessage(error) {
-  return error?.response?.data?.detail || error?.message || 'Something went wrong';
+  const detail = error?.response?.data?.detail;
+  
+  if (typeof detail === "string") {
+    return detail;
+  }
+
+  if (Array.isArray(detail)) {
+    return detail.map((item) => item.msg).join(", ");
+  }
+
+  if (detail && typeof detail === "object") {
+    if (typeof detail.msg === "string") return detail.msg;
+    return JSON.stringify(detail);
+  }
+
+  if (typeof error?.response?.data?.message === "string") {
+    return error.message
+  }
+  
+  if (typeof error?.message === "string") {
+    return error.message;
+  }
+
+  return "Unexpected error";
+
 }

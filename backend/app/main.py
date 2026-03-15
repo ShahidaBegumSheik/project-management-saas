@@ -15,6 +15,7 @@ This API supports:
 - Authnetication and email verification
 - Project Management
 - Team collaboration
+- Add comments in Projects
 - In-app notification
 - Activity tracking
 - Razorpay billing
@@ -33,7 +34,7 @@ Backend
 - MySQL 8+
 - Alembic migrations
 - JWT authentication
-- Stripe (subscriptions + webhooks)
+- Razorpay (subscriptions + webhooks)
 
 Paytment
 - Razorpay

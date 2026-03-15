@@ -1,6 +1,7 @@
 from app.models.audit_log import AuditLog
 from app.models.notification import Notification
 from app.models.project import Project
+from app.models.project_comment import ProjectComment
 from app.models.project_activity import ProjectActivity
 from app.models.refresh_token import RefreshToken
 from app.models.subscription import Subscription

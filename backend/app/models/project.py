@@ -30,6 +30,8 @@ class Project(Base):
         "ProjectActivity", back_populates="project", cascade="all, delete-orphan"
     )
 
+    comments = relationship("ProjectComment", back_populates="project", cascade="all, delete-orphan")
+
     __table_args__ = (
         Index("ix_projects_owner_created", "owner_id", "created_at"),
         Index("ix_projects_team_id", "team_id"),

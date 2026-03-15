@@ -6,6 +6,7 @@ import Card from "../../components/Card";
 import EmptyState from "../../components/EmptyState";
 import Loader from "../../components/Loader";
 import Modal from "../../components/Modal";
+import { useAuth } from "../../contexts/AuthContext"
 import { useToast } from "../../contexts/ToastContext";
 import { formatDate, getErrorMessage } from "../../utils/formatters";
 
@@ -13,6 +14,7 @@ const blankForm = { name: "", description: "", team_id: "" };
 
 export default function ProjectsPage() {
   const { push } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [projects, setProjects] = useState([]);
@@ -22,6 +24,9 @@ export default function ProjectsPage() {
   const [form, setForm] = useState(blankForm);
   const [editingId, setEditingId] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState("")
+  const [commentSaving, setCommentSaving] = useState(false)
 
   async function loadData() {
     setLoading(true);
@@ -43,12 +48,18 @@ export default function ProjectsPage() {
     loadData();
   }, []);
 
-  async function openActivity(project) {
+  async function openProjectDetails(project) {
     setSelectedProject(project);
     try {
-      const { data } = await api.get(`/projects/${project.id}/activity`);
-      setActivity(data);
+      const [activityRes, commentRes] = await Promise.all([
+        api.get(`/projects/${project.id}/activity`),
+        api.get(`/projects/${project.id}/comments`),
+      ]);
+      setActivity(Array.isArray(activityRes.data) ? activityRes.data : []);
+      setComments(Array.isArray(commentRes.data) ? commentRes.data : []);
+      setCommentText("")
     } catch (error) {
+      console.error("openProjectDetails error: ", error);
       push(getErrorMessage(error), "error");
     }
   }
@@ -105,6 +116,68 @@ export default function ProjectsPage() {
     }
   }
 
+  async function handleAddComment(event) {
+    event.preventDefault();
+    
+    if (!selectedProject) {
+      push("Please select a project", "error");
+      return;
+    }
+    
+    const trimmedComment = commentText.trim();
+    
+    if (!trimmedComment) {
+      push("Comment cannot be empty", "error");
+      return;
+    }
+    
+    setCommentSaving(true);
+    
+    try {
+      const response = await api.post(`/projects/${selectedProject.id}/comments`,
+        { content: trimmedComment }
+      );
+      
+      const newComment = response.data;
+      
+      // show new comment immediately
+      
+      setComments((prev) =>
+        Array.isArray(prev) ? [...prev, newComment] : [newComment]);
+      
+      setCommentText("");
+      push("Comment added", "success");
+    } catch (error) {
+      console.error("handleAddComment error:", error?.response?.data || error);
+      push(getErrorMessage(error), "error");
+    } finally {
+      setCommentSaving(false);
+    }
+    
+    // optional background refresh, not blocking the button
+    openProjectDetails(selectedProject);
+  }
+
+  async function handleDeleteComment(commentId) {
+    if (!selectedProject) return;
+    if (!window.confirm("Delete this comment?")) return;
+    try {
+      const response = await api.delete(`/projects/${selectedProject.id}/comments/${commentId}`);
+
+      console.log("delete response:", response.data);
+
+      setComments((prev) => 
+        Array.isArray(prev) ? prev.filter((comment) => comment.id !== commentId): []
+      );
+      push("Comment deleted", "success");
+      // await openProjectDetails(selectedProject);
+    } catch (error) {
+      console.error("handleDeleteComment error:", error);
+      console.error("delete response data:", error?.response?.data || error);
+      push(getErrorMessage(error), "error")
+    }
+  }
+
   if (loading) return <Loader label="Loading projects..." />;
 
   return (
@@ -116,7 +189,7 @@ export default function ProjectsPage() {
               {projects.map((project) => (
                 <div key={project.id} className="rounded-2xl border border-slate-200 p-4">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <button className="text-left" onClick={() => openActivity(project)}>
+                    <button className="text-left" onClick={() => openProjectDetails(project)}>
                       <p className="text-lg font-semibold text-slate-900">{project.name}</p>
                       <p className="mt-1 text-sm text-slate-500">{project.description || "No description provided."}</p>
                     </button>
@@ -137,26 +210,100 @@ export default function ProjectsPage() {
           )}
         </Card>
 
-        <Card title={selectedProject ? `Activity · ${selectedProject.name}` : "Project activity timeline"} subtitle="Create, update, and delete actions are tracked here.">
+        <Card title={selectedProject ? `Details · ${selectedProject.name}` : "Project details"} subtitle="Activity and comments for the selected project.">
           {selectedProject ? (
-            activity.length ? (
-              <div className="space-y-4">
-                {activity.map((item) => (
-                  <div key={item.id} className="relative rounded-2xl border border-slate-200 p-4">
-                    <div className="absolute left-4 top-4 h-3 w-3 rounded-full bg-brand-600" />
-                    <div className="pl-6">
-                      <p className="font-medium text-slate-900">{item.description}</p>
-                      <p className="mt-1 text-sm text-slate-500">Action: {item.action}</p>
-                      <p className="mt-1 text-xs text-slate-400">{formatDate(item.timestamp)}</p>
-                    </div>
+            <div className="space-y-6">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Activity Timeline</p>
+                {activity.length ? (
+                  <div className="mt-3 space-y-4">
+                    {activity.map((item) => (
+                      <div key={item.id} className="relative rounded-2xl border border-slate-200 p-4">
+                        <div className="absolute left-4 top-4 h-3 w-3 rounded-full bg-brand-600" />
+                        <div className="pl-6">
+                          <p className="font-medium text-slate-900">{item.description}</p>
+                          <p className="mt-1 text-sm text-slate-500">Action: {item.action}</p>
+                          <p className="mt-1 text-xs text-slate-400">{formatDate(item.timestamp)}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <p className="mt-2 text-sm text-slate-500">No activity logged yet.</p>
+                )}
               </div>
-            ) : (
-              <p className="text-sm text-slate-500">No activity logged yet.</p>
-            )
+              
+              <div className="border-t border-slate-200 pt-6">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-slate-900">Comments</p>
+                  <Badge tone="neutral">{comments.length} total</Badge>
+                </div>
+
+
+                <form className="mt-4 space-y-3" onSubmit={handleAddComment}>
+                  <textarea
+                    className="input min-h-[100px]"
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="Write a project comment for your team..."
+                    maxLength={2000}
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      type="submit" 
+                      disabled={commentSaving || !commentText.trim()}
+                    >
+                      {commentSaving ? "Posting..." : "Add comment"}
+                    </Button>
+                  </div>
+                </form>
+
+
+                {Array.isArray(comments) && comments.length > 0 ? (
+                  <div className="mt-4 space-y-3">
+                    {comments.map((comment) => {
+                      return (
+                        <div
+                          key={comment.id} 
+                          className="rounded-2xl border border-slate-200 p-4"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900">
+                                {comment.author_email}
+                              </p>
+                              <p className="mt-1 text-xs text-slate-400">
+                                {formatDate(comment.created_at)}
+                              </p>
+                            </div>
+
+                            {String(user?.id) === String(comment.author_id) ? (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => handleDeleteComment(comment.id)}
+                              >
+                                Delete
+                              </Button>
+                            ) : null}
+                          </div>
+
+                          <p className="mt-3 whitespace-pre-wrap text-sm text-slate-600">
+                            {comment.content}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-slate-500">
+                    No comments yet. Start the discussion here.
+                  </p>
+                )}
+              </div>
+            </div>
           ) : (
-            <p className="text-sm text-slate-500">Select a project to inspect its activity timeline.</p>
+            <p className="text-sm text-slate-500">Select a project to inspect its activity timeline and comments.</p>
           )}
         </Card>
       </div>

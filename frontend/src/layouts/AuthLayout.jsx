@@ -12,7 +12,7 @@ export default function AuthLayout() {
 
         <div className="mt-12 max-w-xl">
           <h1 className="text-5xl font-bold leading-tight">
-            User and Admin panels for your project management SaaS.
+            User and Admin for Project management SaaS app.
           </h1>
           <p className="mt-6 text-lg text-slate-300">
             Application provides role-based dashboards, analytics charts, billing visibility, notifications,

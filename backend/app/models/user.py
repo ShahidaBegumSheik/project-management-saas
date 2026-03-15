@@ -25,7 +25,6 @@ class User(Base):
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    # verification_token: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
     verification_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -59,6 +58,9 @@ class User(Base):
     )
     refresh_tokens = relationship(
         "RefreshToken", back_populates="user", cascade="all, delete-orphan"
+    )
+    project_comments = relationship(
+        "ProjectComment", back_populates="author", cascade="all, delete-orphan"
     )
 
     __table_args__ = (

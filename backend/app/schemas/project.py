@@ -42,3 +42,20 @@ class ProjectActivityOut(BaseModel):
     description: str
     timestamp: datetime
     model_config = ConfigDict(from_attributes=True)
+
+class ProjectCommentCreate(BaseModel):
+    content: str = Field(min_length=1, max_length=2000)
+
+    model_config = ConfigDict(
+        json_schema_extra={"example": {"content": "I am developing Commments module."}}
+        )
+
+class ProjectCommentOut(BaseModel):
+    id: int
+    project_id: int
+    author_id: int
+    author_email: str
+    content: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
