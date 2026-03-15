@@ -640,26 +640,37 @@ Tests cover:
 ## Step 1: Creating models and relationships
 
 We need to create models for the entities that have properties.
-For comment module, we create one model named ProjectComment and hence one new table in the DB named project_comments
+
+For comment module, we create one model named "ProjectComment" and hence one new table in the DB named "project_comments"
+
 Table creation
-For ProjectComment, we create a table in DB using
+For "ProjectComment", we create a table in DB using
 
 ```
 __tablename__ = "project_comments"
 ```
 
 For its properties we decide the data types.
+
 i) id – uniquely identifies a comment, becomes the primary key - int
+
 ii) project_id – the project for which the comment is associated with - int
+
 iii) author_id – the user who added the comments to the project. - int
+
 iv) content – the comment contents - string
+
 v) created_at – the date and time when the comment was added
 
-We have to create relationships of the model ProjectComment to other models or relationships.
-Already we have Project and User models.
+We have to create relationships of the model "ProjectComment" to other models or relationships.
+
+Already we have "Project" and "User" models.
+
 The relationships:
-Since, project_id is a primary key in Project table, it becomes the foreign key in the ProjectComment model.
-And similarly, author_id is the primary key in User table, it becomes the foreign key in the ProjectComment table.
+
+"project_id" is a primary key in "Project" table, it becomes the foreign key in the "ProjectComment" model.
+
+"author_id" is the primary key in "User" table, it becomes the foreign key in the "ProjectComment" table.
 
 ```
 project_id: Mapped[int] = mapped_column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
@@ -672,23 +683,41 @@ author_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete=
 ```
 
 ondelete=”CASCADE” is used when we want to delete the child rows for a matching parent if that parent row is deleted.
-So, if particular project_id gets deleted in the “projects” table, the comments for that project_id get deleted from the “project_comments” table. If we want to prevent deletion of the parent row as long as its children are present in the other table, we need to use ondelete=”RESTRICT”. Example, if user leaves the project, then his id is not deleted if his comments are still present in the projects page as in future we may want to find out which user had made that comment.
 
-1. From Project to ProjectComment - one-to-many, from ProjectComment to Project – many-to-one
-2. From User to ProjectComment – one-to-many, from ProjectComment to User – many-to-one
-   We have to add the relationships to the ProjectComment model as well as Project and User models.
+So, if particular "project_id" gets deleted in the “projects” table, the comments for that "project_id" get deleted from the “project_comments” table. 
+
+If we want to prevent deletion of the parent row as long as its children are present in the other table, we need to use ondelete=”RESTRICT”. 
+
+Example, if a user leaves the project, then his id is not deleted if his comments are still present in the projects page as in future we may want to find out which user had made that comment.
+
+
+1. From "Project" to "ProjectComment" - one-to-many, from "ProjectComment" to "Project" – many-to-one
+   
+2. From "User" to "ProjectComment" – one-to-many, from "ProjectComment" to "User" – many-to-one
+   
+   We have to add the relationships to the "ProjectComment" model as well as "Project" and "User" models
+   
    These relationships become attributes of the models and can be used to navigate through the relationship structure without using the complex join queries.
 
 Relationships:
 
+
 1. ProjectComment :
+   
    i) project - related to Project model
+   
    ii) author - related to User model
+   
    project = relationship("Project", back_populates="comments")
-       author = relationship("User", back_populates="project_comments")
+   
+   author = relationship("User", back_populates="project_comments")
+   
    project and author - attributes added to ProjectComment
+   
 2. Project
+   
    i) comments - related to ProjectComment model
+   
 
 ```
 comments = relationship("ProjectComment", back_populates="project", cascade="all, delete-orphan")
@@ -697,19 +726,25 @@ comments = relationship("ProjectComment", back_populates="project", cascade="all
      comments  - attribute added to Project
 
 3.  User
+   
     i) project_comments - related to ProjectComment
+
+    ```
+
     project_comments = relationship("ProjectComment", back_populates="author", cascade="all, delete-orphan")
+
+    ```
+    
     project_comments – attribute added to User
 
-Once the relationships are added, we can access for queries like:
+    Once the relationships are added, we can access for queries like:
 
 ```
 SELECT users.email
-```
-
 FROM project_comments
 JOIN users
 ON users.id = project_comments.author_id
+```
 
 As
 
@@ -717,37 +752,45 @@ As
 comment.author.email
 ```
 
-“comment” – object of ProjectComment SQLAlchemy model – comment = db.query(ProjectComment).first()
-“author” – a relationship defined in the ProjectComment model - author = relationship("User", back_populates="project_comments") – this says SQLAlchemy that author_id is from users.id and SQLAlchemy can automatically load the User object associated with the “comment”
-“email” – field in the User model - email: Mapped[str] = mapped_column(
-        String(255), unique=True, index=True, nullable=False)
+“comment” – object of ProjectComment SQLAlchemy model – ```comment = db.query(ProjectComment).first()```
+
+“author” – a relationship defined in the ProjectComment model - ```author = relationship("User", back_populates="project_comments") ```
+
+This says SQLAlchemy that author_id is from users.id and SQLAlchemy can automatically load the User object associated with the “comment”
+
+“email” – field in the User model - 
+
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
 
 to get both the comments and the author’s email id:
 
+```
 comments = (db.query(ProjectComment).filter(ProjectComment.project_id == project_id).all()
 for comment in comments:
-print(comment.content)
-print(
-
-```
-comment.author.email
+    print(comment.content)
+    print(comment.author.email
 ```
 
 )
 
 Indexing:
+
 To make retrieval fast using an attribute, we have to make that attribute as Index
+
 In ProjectComment model, we use two indexes:
+
 
 ```
 __table_args__ = (
-```
-
         Index("ix_project_comments_project_created", "project_id", "created_at"),
         Index("ix_project_comments_author_id", "author_id"),
     )
+```
+
 Frequent queries using project_id and created_at – the rows are grouped by project_id first, then sorted by time
+
 Similarly, for “author_id” as index to sort internally on this field.
+
 
 Why to use back_populates in relationships
 
@@ -755,114 +798,224 @@ Why to use back_populates in relationships
 comments = relationship("ProjectComment", back_populates="project", cascade="all, delete-orphan")
 ```
 
-SQLAlchemy understands that “comments” and “project” attributes represent the same relationship. Navigation through the relationship becomes easy : comment.project or project.comments. And SQLAlchemy keeps both sides synchronized.
-Example: when we use comment.project = project, SQLAlchemy automatically updates project.comments.
+SQLAlchemy understands that “comments” and “project” attributes represent the same relationship. 
+
+Navigation through the relationship becomes easy : comment.project or project.comments. And SQLAlchemy keeps both sides synchronized.
+
+Example: when we use ```comment.project = project```, SQLAlchemy automatically updates project.comments.
+
 Without back_populates, we have to manually maintain both sides like:
+
+```
 comment.project = project
 project.comments.append(commend)
+```
 
 ## Step 2: Creating Schemas – pydantic models for APIs
 
 Used for the request and response in APIs, what data can be sent and what data can be received via API calls
+
 Also, for input validation.
+
 For ProjectComment, we add two schemas
+
 i) ProjectCommentCreate
+
 ii) ProjectCommentOut
+
 These schemas can also include the attributes from the models which have relationship with them. Example, we include author_email from User model in the ProjectCommentOut schema.
+
 Schemas help in hiding the fields from the requests and responses as not all fields should be exposed in the API endpoints.
+
 Pydantic models help in validating the inputs that are used in API requests and responses.
+
 
 ## Step 3: Creating routers
 
 API prefix: /projects
+
 Common for all the endpoints:
-Check if the project_id is present in the db, if not present or if the user is not part of the team for this project, raise HTTP exception 404 – not found and return. user gets access to project when he accepts the invite sent by the owner of the project. Post acceptance, the user can post comments, delete and view the comments in the projects page.
+
+Check if the project_id is present in the db, if not present or if the user is not part of the team for this project, raise HTTP exception 404 – not found and return. 
+
+User gets access to project when he accepts the invite sent by the owner of the project. Post acceptance, the user can post comments, delete and view the comments in the projects page.
 
 GET: "/{project_id}/comments" – users can list all the comments for a project_id
-list_project_comments (project_id: int, db: Session = Depends(get_db),
-                          user=Depends(get_current_user)
+
+```list_project_comments (project_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)```
+
 We have various roles in the application:
-for checking if it is the current logged in user and granting him access for this endpoint - get_current_user (app/dependencies/auth.py). When a new user registers, with an emailed and password, a token is generated and stored in the browser. This token is used when this user logs in in the future to verify that the user is an authenticated user. The token is extracted when the request arrives for login. And the token is passed to get_current_user() where it is decoded and verified. Once verified, the User is retrieved from the db matching the user_id retrieved from the payload of the request.
+
+for checking if it is the current logged in user and granting him access for this endpoint - get_current_user (app/dependencies/auth.py). 
+
+When a new user registers, with an emailed and password, a token is generated and stored in the browser. 
+
+This token is used when this user logs in in the future to verify that the user is an authenticated user. 
+
+The token is extracted when the request arrives for login. And the token is passed to get_current_user() where it is decoded and verified. 
+
+Once verified, the User is retrieved from the db matching the user_id retrieved from the payload of the request.
+
 So, here for the currently logged in user, the endpoint /api/v1/projects/{project_id}/comments will list all the comments for the project_id if this user is part of the project.
 
 POST: "/{project_id}/comments" – users can call this endpoint to add a comment for a project_id
-add_project_comment (project_id: int, payload: ProjectCommentCreate, db: Session = Depends(get_db), user=Depends(require_end_user)
-The role used here is : require_end_user (app/dependencies/roles.py) – this end point allows only users to post comments. There are two roles (user or admin) - app/models/user.py . So, comments cannot be posted by the admin.
+
+```add_project_comment (project_id: int, payload: ProjectCommentCreate, db: Session = Depends(get_db), user=Depends(require_end_user)```
+
+The role used here is : require_end_user (app/dependencies/roles.py) – this end point allows only users to post comments. 
+
+There are two roles (user or admin) - app/models/user.py . So, comments cannot be posted by the admin.
 
 If user is valid and the project_id is available, create a ProjectComment object and store in the db for ProjectComment table “project_comments”
+
 We also log this post comment activity in two tables – “audit_logs” and “project_activities”
-There is a function to invalidate the cache as a new entry is committed to db now. The cache usually returns the cached information rather than fetching from the db. Its necessary to invalidate the cache for a particular user. The
+
+There is a function to invalidate the cache as a new entry is committed to db now. The cache usually returns the cached information rather than fetching from the db. 
+
+Its necessary to invalidate the cache for a particular user. The
 
 ```
 invalidate_prefix(f"projects:{user.id}:")
 ```
 
-command invalidates cache entries matching by searching using the prefix as “projects:1” or “projects:2” where 1 or 2 represent a user id.
+this command invalidates cache entries matching by searching using the prefix as “projects:1” or “projects:2” where 1 or 2 represent a user id.
 
 DELETE: "/{project_id}/comments/{comment_id}" – only users who added the comments can delete them. Select for a project_id a particular comment_id to delete
+
 Role is require_end_user, as admin cannot delete the comments
+
 Check if the project_id exists in the “projects” table and also the user is part of the team in this project
+
 If not, raise HTTP error 404, project not found.
+
 If passed, find the first comment in the “project_comments” table using filter with the comment_id and the project_id, and delete it if found.
+
 If not found the comment with the comment_id, raise HTTP 404, comment not found
+
 If comment is found, then check if its author is the user who requested the delete api.
+
 If user id doesn’t match with the author_id of the comment, raise HTTP 403 – forbidden as only authors of the comment can delete the comment
+
 If it matches, delete the comment from the db and commit it.
+
 Log this activity in the “audit_logs”
 
 ## Step 4: Alembic migrations to update the db
 
 Since new model is created – ProjectComments, we have to update the db with these changes.
+
 We do this by creating a alembic revision:
 
 ```
 alembic revision -m "add project comments table"
 ```
 
-Check the upgrade() method for create_table and create_index methods and downgrade() method for drop_index() and drop_table() methods. The order in which we create and drop are significant. We create table followed by creating indexes. During downgrade, we drop the indexes first then at the end we drop the table itself.
+Check the upgrade() method for create_table and create_index methods and downgrade() method for drop_index() and drop_table() methods. 
+
+The order in which we create and drop are significant. 
+
+We create table followed by creating indexes. 
+
+During downgrade, we drop the indexes first then at the end we drop the table itself.
+
 Apply the alembic migrations using the command:
 
 ```
 alembic upgrade head
 ```
 
-               or by using the revision id:
-                             alembic upgrade <revision_id>
+or by using the revision id:
+            
+```
+alembic upgrade <revision_id>
+```
 
 ## Step 5: Designing the front end.
 
 Create a folder "api" under the "frontend" folder and inside it create a file client.js
 
-client.js is used for creating a centralized HTTP client that the frontend uses to communicate with the backend API. Its implemented using axios. The app files imports this client. It provides centralized backend URL, attaching the jwt tokens to every request. When our app runs, and we check the console using the F12 key on the browser, we can use the localStorage methods to setItem, getItem, clear. We use these to set, get and clear tokens and users for the authorization session. The app attaches the login token to every request - `Bearer ${token}`
-create a folder named “components” inside the “src” folder. Inside this we can add the reusable React components. Examples: Card for container layouts, Button, Charts, Modal (for pop up dialogs), We import these components in the pages we are displaying (like Projects page, or Notifications page) and call the methods on certain event handlers.
-<button onClick={openProjectDetails}>View Project</button>
-openProjectDetails is a event handler function called when the button is clicked where we can call the backend APIs and get the response from the API. This response can be then displayed in the various components.
-Create “contexts” folder inside “src” folder. Inside this we create “AuthContext.jsx” file. It manages the authentication state across the entire application. Also, we have the “ToastContext.jsx” file inside the “contexts” folder. This is used to show temporary notification messages (toasts) across the app. These are small popup messages that appear briefly to inform the user about somethings like success message, error message, warnings, etc. In Comments module, small popup messages that notify about errors appear on the Projects page.
-Create a “guard” folder and inside that add the two files “RequireAuth.jsx” ( for user authentication before accessing the page) and “RequireRole.jsx” (for restricting access based on user role). We use these inside the JavaScript for controlling the access to the page and authenticating the user when login.
-“AuthLayout.jsx” provides 2-column screen and renders the child route with <Outlet />, child pages LoginPage.jsx and RegisterPage.jsx supply the actual form UI. “AuthLayout.jsx” is connected from frontend/src/App.jsx
+client.js is used for creating a centralized HTTP client that the frontend uses to communicate with the backend API. 
+
+Its implemented using axios. The app files imports this client. It provides centralized backend URL, attaching the jwt tokens to every request. 
+
+When our app runs, and we check the console using the F12 key on the browser, we can use the localStorage methods to setItem, getItem, clear. 
+
+We use these to set, get and clear tokens and users for the authorization session. The app attaches the login token to every request - `Bearer ${token}`
+
+Create a folder named “components” inside the “src” folder. Inside this we can add the reusable React components. 
+
+Examples: Card for container layouts, Button, Charts, Modal (for pop up dialogs), We import these components in the pages we are displaying
+
+(like Projects page, or Notifications page) and call the methods on certain event handlers.
+
+```<button onClick={openProjectDetails}>View Project</button>```
+
+openProjectDetails is a event handler function called when the button is clicked where we can call the backend APIs and get the response from the API. 
+
+This response can be then displayed in the various components.
+
+Create “contexts” folder inside “src” folder. Inside this we create “AuthContext.jsx” file. It manages the authentication state across the entire application.
+
+Also, we have the “ToastContext.jsx” file inside the “contexts” folder. This is used to show temporary notification messages (toasts) across the app. 
+
+These are small popup messages that appear briefly to inform the user about somethings like success message, error message, warnings, etc. 
+
+In Comments module, small popup messages that notify about errors appear on the Projects page.
+
+Create a “guard” folder and inside that add the two files “RequireAuth.jsx” ( for user authentication before accessing the page) and 
+
+“RequireRole.jsx” (for restricting access based on user role). We use these inside the JavaScript for controlling the access to the page and authenticating the user when login.
+
+“AuthLayout.jsx” provides 2-column screen and renders the child route with ```<Outlet />```, child pages LoginPage.jsx and RegisterPage.jsx supply the actual form UI.
+
+“AuthLayout.jsx” is connected from frontend/src/App.jsx
+
 “AuthContext.jsx” contains the authentication logic used by both LoginPage.jsx and RegisterPage.jsx
+
 In the src/pages/user/ProjectPage.jsx, we have added two methods
+
 i) handleAddComment(event)
+
 ii) handleDeleteComment(commentId)
 
 i) handleAddComment(event) :
+
 Check if project is selected, if not selectedProject, we return as comments are associated with project
+
 Trim the comment
+
 Send a post request to /projects/${selectedProject.id}/comments and wait for the response
+
 The response newcomment is appended to the list of comments
 
 ii) handleDeleteComment(commentId):
+
 If not selectedProject, return
+
 If not confirmation of delete, return
-Send a post request to /projects/${selectedProject.id}/comments/${commentId}. commentId is deleted from the list of comments
+
+Send a post request to ```/projects/${selectedProject.id}/comments/${commentId}```. commentId is deleted from the list of comments
+
 We set the comments to new list which doesn’t have the deleted comment
-Array.isArray(prev)? prev.filter((comment) => comment.id !== commentId): []
+
+```Array.isArray(prev)? prev.filter((comment) => comment.id !== commentId): []```
+
 For both add comment and delete comment , pop up toast messages are display to signify addition or deletion
+
+```
 push("Comment added", "success");
 push("Comment deleted", "success");
+```
 
-Inside the react page that is returned, we call these handleAddComment and handleDeleteComment onSubmit. For adding comment we have a form inside which there is a textarea where the comment matter is entered and there is a button to submit. For handleDeleteComment we pass the comment.id and after that comment is deleted from the list, the modified list is returned which is then displayed.
+Inside the react page that is returned, we call these "handleAddComment" and "handleDeleteComment" onSubmit. 
+
+For adding comment we have a form inside which there is a textarea where the comment matter is entered and there is a button to submit. 
+
+For "handleDeleteComment" we pass the comment.id and after that comment is deleted from the list, the modified list is returned which is then displayed.
+
 Inside the routers for delete comment, we check for the author of the comment to allow for deletion of the comment :
+
+```
 @router.delete("/{project_id}/comments/{comment_id}")
 def delete_project_comment(
     project_id: int,
@@ -872,5 +1025,6 @@ def delete_project_comment(
     ):
 …
 …
-if comment.author_id != user.id:
+    if comment.author_id != user.id:
         raise HTTPException(status_code=403, detail="Only the comment owner can delete it")
+```
