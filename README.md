@@ -6,7 +6,8 @@ A **full‑stack Project Management SaaS platform** built with:
 - **React + Vite Frontend**
 - **MySQL Database**
 - **JWT Authentication**
-- **Stripe‑ready Billing Architecture**
+- **Stripe‑read Billing Architecture**
+- **Razorpay Billing**
 - **Docker for database setup**
 - **Automated Backend Testing**
 
@@ -406,7 +407,7 @@ https://github.com/coreybutler/nvm-windows/releases
 
 Download:
 
-```
+```bash
 nvm-setup.exe
 ```
 
@@ -418,7 +419,7 @@ Run the installer and finsih the installation.
 
 Open **Command Prompt** or **PowerShell** and run:
 
-```
+```bash
 nvm version
 ```
 
@@ -426,19 +427,19 @@ nvm version
 
 List available Node versions:
 
-```
+```bash
 nvm list available
 ```
 
 Install LTS version:
 
-```
+```bash
 nvm install 20.11.1
 ```
 
 Activate the installed version:
 
-```
+```bash
 nvm use 20.11.1
 ```
 
@@ -448,11 +449,11 @@ nvm use 20.11.1
 
 Check Node:
 
-```
+```bash
 node -v
 ```
 
-```
+```bash
 npm -v
 ```
 
@@ -464,11 +465,10 @@ npm installs automatically with Node.
 
 Navigate to the project root folder where we want the frontend.
 
-```
 
 Run:
 
-```
+```bash
 npm create vite@latest
 ```
 
@@ -480,16 +480,16 @@ npm create vite@latest
 
 Example:
 
-```
-frontend
-```
+    frontend
 
 ### Prompt 2 – Framework
 
 Select:
 
 ```
+
 React
+
 ```
 
 ### Prompt 3 – Variant
@@ -504,7 +504,7 @@ JavaScript + SWC
 ```
 
 Most common choice:
-
+    
 ```
 JavaScript
 ```
@@ -513,7 +513,7 @@ JavaScript
 
 # 7. Navigate to frontend
 
-```
+```bash
 cd frontend
 ```
 
@@ -521,17 +521,15 @@ cd frontend
 
 # 8. Install Dependencies
 
-```
+```bash
 npm install
 ```
 
 This installs:
 
-```
-react
-react-dom
-vite
-```
+    react
+    react-dom
+    vite
 
 ---
 
@@ -539,25 +537,25 @@ vite
 
 ### React Router
 
-```
+```bash
 npm install react-router-dom
 ```
 
 ### Axios
 
-```
+```bash
 npm install axios
 ```
 
 ### Charts
 
-```
+```bash
 npm install recharts
 ```
 
 ### Icons
 
-```
+```bash
 npm install lucide-react
 ```
 
@@ -572,8 +570,9 @@ VITE_STRIPE_PUBLISHABLE_KEY=pk_test_example
 
 Intall tailwind CSS
 
-    npm install tailwindcss @tailwindcss/vite
-
+```bash
+npm install tailwindcss @tailwindcss/vite
+```
 
 Modify vite.config.js
 
@@ -586,10 +585,15 @@ Modify vite.config.js
       plugins: [react(), tailwindcss()],
     })
 
+---
+
 Run development server
+
+---
 
 ```bash
 npm run dev
+
 ```
 
 Frontend runs at
@@ -676,8 +680,6 @@ The relationships:
 project_id: Mapped[int] = mapped_column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
 ```
 
-   
-
 ```
 author_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 ```
@@ -723,7 +725,7 @@ Relationships:
 comments = relationship("ProjectComment", back_populates="project", cascade="all, delete-orphan")
 ```
 
-     comments  - attribute added to Project
+comments  - attribute added to Project
 
 3.  User
    
@@ -762,7 +764,7 @@ This says SQLAlchemy that author_id is from users.id and SQLAlchemy can automati
 
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
 
-to get both the comments and the author’s email id:
+To get both the comments and the author’s email id:
 
 ```
 comments = (db.query(ProjectComment).filter(ProjectComment.project_id == project_id).all()
@@ -792,7 +794,7 @@ Frequent queries using project_id and created_at – the rows are grouped by pro
 Similarly, for “author_id” as index to sort internally on this field.
 
 
-Why to use back_populates in relationships
+Using back_populates in relationships
 
 ```
 comments = relationship("ProjectComment", back_populates="project", cascade="all, delete-orphan")
@@ -832,7 +834,7 @@ Pydantic models help in validating the inputs that are used in API requests and 
 
 ## Step 3: Creating routers
 
-API prefix: /projects
+API prefix: ```/projects```
 
 Common for all the endpoints:
 
@@ -840,13 +842,13 @@ Check if the project_id is present in the db, if not present or if the user is n
 
 User gets access to project when he accepts the invite sent by the owner of the project. Post acceptance, the user can post comments, delete and view the comments in the projects page.
 
-GET: "/{project_id}/comments" – users can list all the comments for a project_id
+GET: ```"/{project_id}/comments"``` – users can list all the comments for a project_id
 
 ```list_project_comments (project_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)```
 
 We have various roles in the application:
 
-for checking if it is the current logged in user and granting him access for this endpoint - get_current_user (app/dependencies/auth.py). 
+for checking if it is the current logged in user and granting him access for this endpoint - ```get_current_user(app/dependencies/auth.py)```. 
 
 When a new user registers, with an emailed and password, a token is generated and stored in the browser. 
 
@@ -856,13 +858,13 @@ The token is extracted when the request arrives for login. And the token is pass
 
 Once verified, the User is retrieved from the db matching the user_id retrieved from the payload of the request.
 
-So, here for the currently logged in user, the endpoint /api/v1/projects/{project_id}/comments will list all the comments for the project_id if this user is part of the project.
+So, here for the currently logged in user, the endpoint ```/api/v1/projects/{project_id}/comments``` will list all the comments for the project_id if this user is part of the project.
 
-POST: "/{project_id}/comments" – users can call this endpoint to add a comment for a project_id
+POST: ```"/{project_id}/comments"``` – users can call this endpoint to add a comment for a project_id
 
 ```add_project_comment (project_id: int, payload: ProjectCommentCreate, db: Session = Depends(get_db), user=Depends(require_end_user)```
 
-The role used here is : require_end_user (app/dependencies/roles.py) – this end point allows only users to post comments. 
+The role used here is : ```require_end_user (app/dependencies/roles.py)``` – this end point allows only users to post comments. 
 
 There are two roles (user or admin) - app/models/user.py . So, comments cannot be posted by the admin.
 
@@ -880,7 +882,7 @@ invalidate_prefix(f"projects:{user.id}:")
 
 this command invalidates cache entries matching by searching using the prefix as “projects:1” or “projects:2” where 1 or 2 represent a user id.
 
-DELETE: "/{project_id}/comments/{comment_id}" – only users who added the comments can delete them. Select for a project_id a particular comment_id to delete
+DELETE: ```"/{project_id}/comments/{comment_id}"``` – only users who added the comments can delete them. Select for a project_id a particular comment_id to delete
 
 Role is require_end_user, as admin cannot delete the comments
 
@@ -936,7 +938,7 @@ Create a folder "api" under the "frontend" folder and inside it create a file cl
 
 client.js is used for creating a centralized HTTP client that the frontend uses to communicate with the backend API. 
 
-Its implemented using axios. The app files imports this client. It provides centralized backend URL, attaching the jwt tokens to every request. 
+Its implemented using axios. The app files import this client. It provides centralized backend URL, attaching the jwt tokens to every request. 
 
 When our app runs, and we check the console using the F12 key on the browser, we can use the localStorage methods to setItem, getItem, clear. 
 
@@ -972,7 +974,7 @@ Create a “guard” folder and inside that add the two files “RequireAuth.jsx
 
 “AuthContext.jsx” contains the authentication logic used by both LoginPage.jsx and RegisterPage.jsx
 
-In the src/pages/user/ProjectPage.jsx, we have added two methods
+In the ```src/pages/user/ProjectPage.jsx```, we have added two methods
 
 i) handleAddComment(event)
 
@@ -984,7 +986,7 @@ Check if project is selected, if not selectedProject, we return as comments are 
 
 Trim the comment
 
-Send a post request to /projects/${selectedProject.id}/comments and wait for the response
+Send a post request to ```/projects/${selectedProject.id}/comments``` and wait for the response
 
 The response newcomment is appended to the list of comments
 
